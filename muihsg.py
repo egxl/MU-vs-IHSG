@@ -189,31 +189,224 @@ def run_analysis(use_cache=True):
     print(f"Avg Return After Win:    {wins_only['Daily_Return'].mean()*100:.4f}%")
     print("="*40)
     
-    # 5. Visualize
-    sns.set_theme(style="darkgrid")
-    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+    # ==========================================
+    # 5. SOPHISTICATED VISUALIZATION DASHBOARD
+    # ==========================================
+    # Set up premium styling with custom theme
+    plt.style.use('seaborn-v0_8-whitegrid')
     
-    # Plot A: Returns Comparison
-    avg_ret_win = wins_only['Daily_Return'].mean() * 100
-    avg_ret_other = final_df[final_df['MU_Won'] == False]['Daily_Return'].mean() * 100
+    # Custom color palette - sophisticated dark theme
+    COLORS = {
+        'primary': '#E74C3C',       # Manchester United Red
+        'secondary': '#1ABC9C',     # Teal accent
+        'background': '#2C3E50',    # Dark slate
+        'surface': '#34495E',       # Lighter slate
+        'text': '#ECF0F1',          # Off-white
+        'win': '#27AE60',           # Green for wins
+        'loss': '#E74C3C',          # Red for losses
+        'neutral': '#95A5A6',       # Gray
+    }
     
-    sns.barplot(x=['After MU Win', 'After Loss/Draw'], y=[avg_ret_win, avg_ret_other], ax=axes[0], palette=['#e74c3c', '#34495e'])
-    axes[0].set_title('Average IHSG Daily Return (%)', fontsize=14, fontweight='bold')
-    axes[0].axhline(0, color='black', linewidth=1.2)
+    # Create sophisticated 2x2 dashboard
+    fig = plt.figure(figsize=(18, 14))
+    fig.patch.set_facecolor('#1a1a2e')
     
-    # Plot B: Cumulative Strategy
-    ihsg_data['Strategy_Return'] = 0.0
-    win_next_days = wins_only['Next_Trading_Day'].tolist()
-    ihsg_data.loc[ihsg_data.index.isin(win_next_days), 'Strategy_Return'] = -ihsg_data['Daily_Return']
-    ihsg_data['Cumulative_Return'] = (1 + ihsg_data['Strategy_Return']).cumprod() - 1
+    # Use GridSpec for advanced layout
+    gs = fig.add_gridspec(3, 3, hspace=0.35, wspace=0.3, 
+                         left=0.06, right=0.94, top=0.92, bottom=0.05)
     
-    axes[1].plot(ihsg_data.index, ihsg_data['Cumulative_Return'] * 100, color='#27ae60', linewidth=2)
-    axes[1].fill_between(ihsg_data.index, ihsg_data['Cumulative_Return'] * 100, color='#2ecc71', alpha=0.2)
-    axes[1].set_title('Strategy: Short IHSG After MU Win', fontsize=14, fontweight='bold')
-    axes[1].set_ylabel('Cumulative Return (%)')
+    # Color helper for text
+    def color_text(color='#ECF0F1'):
+        return {'color': color, 'fontsize': 11, 'fontweight': 'bold'}
     
-    plt.suptitle('Manchester United vs. Indonesian Stock Exchange (IHSG)', fontsize=18, fontweight='bold')
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    # ------------------------------------------
+    # PANEL A: Enhanced Returns Comparison (Top Left)
+    # ------------------------------------------
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1.set_facecolor('#16213e')
+    
+    categories = ['After MU Win', 'After Loss/Draw']
+    returns = [avg_ret_win, avg_ret_other]
+    bar_colors = [COLORS['win'], COLORS['neutral']]
+    
+    bars = ax1.bar(categories, returns, color=bar_colors, edgecolor='white', 
+                   linewidth=1.5, width=0.6, alpha=0.85)
+    
+    # Add value labels on bars
+    for bar, val in zip(bars, returns):
+        height = bar.get_height()
+        ax1.annotate(f'{val:.3f}%',
+                    xy=(bar.get_x() + bar.get_width() / 2, height),
+                    xytext=(0, 5), textcoords="offset points",
+                    ha='center', va='bottom', color='white', fontsize=12, fontweight='bold')
+    
+    ax1.axhline(0, color='white', linewidth=1, linestyle='--', alpha=0.5)
+    ax1.set_title('Average IHSG Daily Return', fontsize=14, fontweight='bold', color='white', pad=15)
+    ax1.set_ylabel('Return (%)', color='white', fontsize=10)
+    ax1.tick_params(colors='white')
+    for spine in ax1.spines.values():
+        spine.set_color('white')
+        spine.set_alpha(0.3)
+    
+    # ------------------------------------------
+    # PANEL B: Distribution Density Plot (Top Center)
+    # ------------------------------------------
+    ax2 = fig.add_subplot(gs[0, 1])
+    ax2.set_facecolor('#16213e')
+    
+    win_returns = wins_only['Daily_Return'].dropna() * 100
+    other_returns = final_df[final_df['MU_Won'] == False]['Daily_Return'].dropna() * 100
+    
+    # KDE plots with filled areas
+    if len(win_returns) > 3:
+        sns.kdeplot(win_returns, ax=ax2, color=COLORS['win'], fill=True, alpha=0.4, 
+                   linewidth=2, label='After MU Win')
+    if len(other_returns) > 3:
+        sns.kdeplot(other_returns, ax=ax2, color=COLORS['neutral'], fill=True, alpha=0.4, 
+                   linewidth=2, label='After Loss/Draw')
+    
+    ax2.axvline(0, color='white', linewidth=1, linestyle='--', alpha=0.5)
+    ax2.set_title('Return Distribution Density', fontsize=14, fontweight='bold', color='white', pad=15)
+    ax2.set_xlabel('Daily Return (%)', color='white', fontsize=10)
+    ax2.set_ylabel('Density', color='white', fontsize=10)
+    ax2.legend(facecolor=COLORS['surface'], edgecolor='white', labelcolor='white')
+    ax2.tick_params(colors='white')
+    for spine in ax2.spines.values():
+        spine.set_color('white')
+        spine.set_alpha(0.3)
+    
+    # ------------------------------------------
+    # PANEL C: Win Rate Gauge (Top Right)
+    # ------------------------------------------
+    ax3 = fig.add_subplot(gs[0, 2])
+    ax3.set_facecolor('#16213e')
+    
+    # Create a horizontal bar showing win/red relationship
+    win_count = len(wins_only)
+    red_count = success_cases
+    non_red_count = win_count - red_count
+    
+    segments = [red_count, non_red_count]
+    segment_colors = [COLORS['loss'], COLORS['neutral']]
+    
+    # Stacked horizontal bar
+    left_pos = 0
+    for seg, color in zip(segments, segment_colors):
+        ax3.barh(0, seg, left=left_pos, color=color, edgecolor='white', linewidth=1, height=0.5)
+        left_pos += seg
+    
+    ax3.set_xlim(0, win_count)
+    ax3.set_ylim(-0.5, 0.5)
+    ax3.set_title('IHSG Red Days After MU Win', fontsize=14, fontweight='bold', color='white', pad=15)
+    ax3.text(win_count/2, 0.3, f'{accuracy:.1f}%', ha='center', va='center', 
+             fontsize=24, fontweight='bold', color='white')
+    ax3.text(win_count/2, -0.3, f'n={win_count}', ha='center', va='center', 
+             fontsize=10, color='white', alpha=0.7)
+    ax3.set_yticks([])
+    ax3.tick_params(colors='white')
+    for spine in ax3.spines.values():
+        spine.set_color('white')
+        spine.set_alpha(0.3)
+    
+    # ------------------------------------------
+    # PANEL D: Cumulative Strategy Performance (Middle Row - Span 2)
+    # ------------------------------------------
+    ax4 = fig.add_subplot(gs[1, :2])
+    ax4.set_facecolor('#16213e')
+    
+    # Plot cumulative returns with gradient fill
+    ax4.plot(ihsg_data.index, ihsg_data['Cumulative_Return'] * 100, 
+             color=COLORS['secondary'], linewidth=2.5, label='Strategy Return', alpha=0.9)
+    ax4.fill_between(ihsg_data.index, ihsg_data['Cumulative_Return'] * 100, 
+                     color=COLORS['secondary'], alpha=0.15)
+    
+    # Add benchmark (buy & hold)
+    ihsg_data['BuyHold_Return'] = ihsg_data['Daily_Return']
+    ihsg_data['Cumulative_BH'] = (1 + ihsg_data['BuyHold_Return']).cumprod() - 1
+    ax4.plot(ihsg_data.index, ihsg_data['Cumulative_BH'] * 100, 
+             color=COLORS['neutral'], linewidth=1.5, linestyle='--', 
+             label='IHSG Buy & Hold', alpha=0.7)
+    
+    ax4.axhline(0, color='white', linewidth=1, linestyle='-', alpha=0.3)
+    ax4.set_title('Cumulative Strategy Performance: Short IHSG After MU Win', 
+                  fontsize=14, fontweight='bold', color='white', pad=15)
+    ax4.set_ylabel('Cumulative Return (%)', color='white', fontsize=10)
+    ax4.legend(facecolor=COLORS['surface'], edgecolor='white', labelcolor='white', loc='upper left')
+    ax4.tick_params(colors='white')
+    ax4.grid(True, alpha=0.2, color='white')
+    for spine in ax4.spines.values():
+        spine.set_color('white')
+        spine.set_alpha(0.3)
+    
+    # ------------------------------------------
+    # PANEL E: Rolling Correlation (Middle Right)
+    # ------------------------------------------
+    ax5 = fig.add_subplot(gs[1, 2])
+    ax5.set_facecolor('#16213e')
+    
+    # Calculate rolling correlation (30-day window)
+    final_df_sorted = final_df.sort_values('Date').copy()
+    final_df_sorted['Rolling_Corr'] = final_df_sorted['MU_Won'].astype(int).rolling(window=10).corr(final_df_sorted['Daily_Return'])
+    
+    ax5.plot(final_df_sorted['Date'], final_df_sorted['Rolling_Corr'], 
+             color=COLORS['primary'], linewidth=2, alpha=0.8)
+    ax5.fill_between(final_df_sorted['Date'], final_df_sorted['Rolling_Corr'], 
+                     color=COLORS['primary'], alpha=0.2)
+    ax5.axhline(0, color='white', linewidth=1, linestyle='--', alpha=0.5)
+    ax5.set_title('Rolling Correlation (10-day)', fontsize=14, fontweight='bold', color='white', pad=15)
+    ax5.set_ylabel('Correlation', color='white', fontsize=10)
+    ax5.tick_params(colors='white')
+    ax5.grid(True, alpha=0.2, color='white')
+    for spine in ax5.spines.values():
+        spine.set_color('white')
+        spine.set_alpha(0.3)
+    
+    # ------------------------------------------
+    # PANEL F: Monthly Heatmap (Bottom Row - Span 3)
+    # ------------------------------------------
+    ax6 = fig.add_subplot(gs[2, :])
+    ax6.set_facecolor('#16213e')
+    
+    # Create monthly aggregation
+    final_df_monthly = final_df.copy()
+    final_df_monthly['YearMonth'] = final_df_monthly['Date'].dt.to_period('M')
+    monthly_pivot = final_df_monthly.pivot_table(
+        values='Daily_Return', 
+        index=final_df_monthly['YearMonth'].astype(str),
+        columns='MU_Won',
+        aggfunc='mean'
+    ) * 100
+    
+    # Create heatmap data
+    if not monthly_pivot.empty:
+        monthly_pivot.columns = ['Loss/Draw', 'MU Win']
+        monthly_pivot = monthly_pivot.tail(24)  # Last 24 months
+        
+        sns.heatmap(monthly_pivot, ax=ax6, cmap='RdYlGn', center=0, annot=True, 
+                   fmt='.2f', linewidths=0.5, linecolor='white',
+                   cbar_kws={'label': 'Avg Return (%)', 'facecolor': '#16213e'},
+                   annot_kws={'color': 'white', 'fontsize': 9})
+        
+        ax6.set_title('Monthly Returns: After MU Win vs Loss/Draw', 
+                      fontsize=14, fontweight='bold', color='white', pad=15)
+        ax6.set_xlabel('Match Outcome', color='white', fontsize=10)
+        ax6.set_ylabel('Month', color='white', fontsize=10)
+        ax6.tick_params(colors='white', axis='x', labelrotation=0)
+        ax6.tick_params(colors='white', axis='y', labelrotation=0)
+        for spine in ax6.spines.values():
+            spine.set_color('white')
+            spine.set_alpha(0.3)
+    
+    # ------------------------------------------
+    # MAIN TITLE
+    # ------------------------------------------
+    fig.suptitle('Manchester United vs. Indonesian Stock Exchange (IHSG) Analysis Dashboard', 
+                 fontsize=20, fontweight='bold', color='white', y=0.98)
+    
+    # Add subtitle with key stats
+    fig.text(0.5, 0.95, f'Hypothesis Accuracy: {accuracy:.1f}% | Total Matches: {total_wins} | Data Period: {final_df["Date"].min().strftime("%Y")} - {final_df["Date"].max().strftime("%Y")}', 
+             ha='center', va='top', fontsize=11, color='#BDC3C7', style='italic')
+    
     plt.show()
 
 if __name__ == "__main__":
