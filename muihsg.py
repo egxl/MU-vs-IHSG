@@ -1,4 +1,5 @@
 import os
+import argparse
 import requests
 import yfinance as yf
 import pandas as pd
@@ -441,4 +442,9 @@ def run_analysis(use_cache=True):
     plt.show()
 
 if __name__ == "__main__":
-    run_analysis()
+    parser = argparse.ArgumentParser(description="MU vs IHSG Correlation Analysis")
+    parser.add_argument('--refresh', '-r', action='store_true', 
+                       help='Force refresh cached data (ignore cache)')
+    args = parser.parse_args()
+    
+    run_analysis(use_cache=not args.refresh)

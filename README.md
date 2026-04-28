@@ -15,7 +15,14 @@ This project fetches real match results and stock data, aligns them to the next 
 - **Multi-source football data**: FBref scraping → Football-Data.org API → optional synthetic mock fallback
 - **Local CSV caching**: avoids redundant network requests on re-runs
 - **Statistical summary**: win count, red-day frequency, average returns
-- **Visualizations**: bar chart of average returns + cumulative strategy curve
+- **Sophisticated Analytics Dashboard**: A premium 6-panel visualization including:
+    - Average returns comparison
+    - Return distribution density (KDE)
+    - Hypothesis accuracy gauge
+    - Cumulative strategy vs. Buy & Hold benchmark
+    - Rolling 10-day correlation
+    - Monthly performance heatmap
+- **Smart Data Alignment**: Automatically clips charts to the MU match date range for accurate strategy visualization.
 
 ---
 
@@ -44,6 +51,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### 4. API Key Configuration
+
 Open `muihsg.py` and replace the `FOOTBALL_API_KEY` constant with your own key from [football-data.org](https://www.football-data.org/). 
 
 ### 5. Configure Data Sources (Optional)
@@ -57,14 +66,18 @@ By default, the script will only use real data from FBref or the API. If both fa
 ## Usage
 
 ```bash
+# Run with default settings (uses local cache if available)
 python muihsg.py
+
+# Force refresh data (ignores cache and fetches fresh data)
+python muihsg.py --refresh
 ```
 
 The script will:
-1. Load cached data if available, otherwise fetch live data
+1. Load cached data (unless `--refresh` is used)
 2. Align match dates to the next trading session
-3. Print a statistical summary to the console
-4. Display two charts
+3. Print a detailed statistical summary to the console
+4. Display a sophisticated 6-panel analytics dashboard
 
 ---
 
