@@ -94,9 +94,10 @@ python muihsg.py --refresh
 ```
 muihsg-vs-ihsg/
 ├── muihsg.py                   # Main analysis engine
-├── scraper_11v11.py            # Tool used to parse 11v11 match records
 ├── mu_history_2000_2026.csv    # Hardcoded MU match dataset
-├── 11v11_match_records/        # Source HTML/Text records from 11v11
+├── data_source/                # Research tools and raw evidence
+│   ├── scraper_11v11.py        # Parser used to generate the dataset
+│   └── 11v11_match_records/    # Original source records (HTML/Text)
 ├── requirements.txt            # Python dependencies
 ├── README.md                   # This file
 └── .gitignore                  # Excludes local caches

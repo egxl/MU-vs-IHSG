@@ -67,7 +67,7 @@ def parse_local_htm_files(directory="11v11_match_records"):
         # Drop duplicates and sort
         df = df.drop_duplicates(subset=['Date', 'Match']).sort_values('Date')
         
-        output_file = "mu_history_2000_2026.csv"
+        output_file = "../mu_history_2000_2026.csv"
         df.to_csv(output_file, index=False)
         print(f"\n[SUCCESS] Processed {len(df)} total unique matches and saved to {output_file}")
         
