@@ -12,7 +12,7 @@ This project fetches real match results and stock data, aligns them to the next 
 
 ## Features
 
-- **Multi-source football data**: FBref scraping → Football-Data.org API → synthetic mock fallback
+- **Multi-source football data**: FBref scraping → Football-Data.org API → optional synthetic mock fallback
 - **Local CSV caching**: avoids redundant network requests on re-runs
 - **Statistical summary**: win count, red-day frequency, average returns
 - **Visualizations**: bar chart of average returns + cumulative strategy curve
@@ -44,9 +44,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. (Optional) Set your API key
+Open `muihsg.py` and replace the `FOOTBALL_API_KEY` constant with your own key from [football-data.org](https://www.football-data.org/). 
 
-Open `muihsg.py` and replace the `FOOTBALL_API_KEY` constant with your own key from [football-data.org](https://www.football-data.org/). The script works without it (falls back to mock data).
+### 5. Configure Data Sources (Optional)
+
+By default, the script will only use real data from FBref or the API. If both fail, it will stop. To enable the synthetic mock data generator for testing purposes:
+1. Open `muihsg.py`.
+2. Set `ENABLE_MOCK_FALLBACK = True`.
 
 ---
 
@@ -70,7 +74,7 @@ The script will:
 |---|---|---|
 | [FBref](https://fbref.com) | Scraping | Primary — full match logs |
 | [football-data.org](https://www.football-data.org/) | API | Secondary fallback |
-| Synthetic generator | Mock | Tertiary fallback |
+| Synthetic generator | Mock | Tertiary fallback (Disabled by default) |
 | [Yahoo Finance (^JKSE)](https://finance.yahoo.com/quote/%5EJKSE/) | API via `yfinance` | IHSG daily data |
 
 ---

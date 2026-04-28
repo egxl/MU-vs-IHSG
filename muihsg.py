@@ -16,6 +16,10 @@ IHSG_CACHE_FILE = "ihsg_history_cache.csv"
 MU_FBREF_ID = "19538871" # Manchester United ID on FBref
 FOOTBALL_API_KEY = "1b5347948e7b4eb5a916e3c422555905" # From previous script
 
+# DATA SOURCE CONFIGURATION
+# Set to True to enable "Synthetic generator / Mock Tertiary fallback" if real data retrieval fails
+ENABLE_MOCK_FALLBACK = False
+
 # ==========================================
 # 2. FOOTBALL DATA MODULE
 # ==========================================
@@ -153,9 +157,17 @@ def run_analysis(use_cache=True):
         if mu_data.empty:
             mu_data = fetch_mu_matches_api(FOOTBALL_API_KEY)
             
-        # Fallback to Mock
+        # Fallback to Mock (Synthetic generator)
         if mu_data.empty:
-            mu_data = generate_mock_mu_data()
+            if ENABLE_MOCK_FALLBACK:
+                mu_data = generate_mock_mu_data()
+            else:
+                print("\n" + "!"*60)
+                print("CRITICAL: No MU match data found from scraper or API.")
+                print("Mock fallback is currently DISABLED by default.")
+                print("To enable synthetic data for testing, set 'ENABLE_MOCK_FALLBACK = True' in the configuration.")
+                print("!"*40 + "\n")
+                return
         else:
             mu_data.to_csv(MU_CACHE_FILE, index=False)
             print(f"[SUCCESS] MU history cached to {MU_CACHE_FILE}")
@@ -176,9 +188,20 @@ def run_analysis(use_cache=True):
 
     # 4. Statistics
     wins_only = final_df[final_df['MU_Won'] == True]
+    others = final_df[final_df['MU_Won'] == False]
     total_wins = len(wins_only)
     success_cases = wins_only['Goes_Red'].sum()
     accuracy = (success_cases / total_wins) * 100 if total_wins > 0 else 0
+    
+    avg_ret_win = wins_only['Daily_Return'].mean() * 100 if total_wins > 0 else 0
+    avg_ret_other = others['Daily_Return'].mean() * 100 if len(others) > 0 else 0
+    
+    # Calculate Strategy Return (Short IHSG after MU Win)
+    ihsg_data['Strategy_Return'] = 0.0
+    win_next_days = final_df[final_df['MU_Won'] == True]['Next_Trading_Day'].unique()
+    # If MU wins, we short (profit if IHSG goes red)
+    ihsg_data.loc[ihsg_data.index.isin(win_next_days), 'Strategy_Return'] = -ihsg_data.loc[ihsg_data.index.isin(win_next_days), 'Daily_Return']
+    ihsg_data['Cumulative_Return'] = (1 + ihsg_data['Strategy_Return']).cumprod() - 1
     
     print("\n" + "="*40)
     print("STATISTICAL SUMMARY")
@@ -186,7 +209,8 @@ def run_analysis(use_cache=True):
     print(f"Total MU Wins Analyzed:  {total_wins}")
     print(f"IHSG Closed Red Next:    {success_cases}")
     print(f"Hypothesis Accuracy:     {accuracy:.2f}%")
-    print(f"Avg Return After Win:    {wins_only['Daily_Return'].mean()*100:.4f}%")
+    print(f"Avg Return After Win:    {avg_ret_win:.4f}%")
+    print(f"Avg Return After Loss:   {avg_ret_other:.4f}%")
     print("="*40)
     
     # ==========================================
@@ -384,7 +408,7 @@ def run_analysis(use_cache=True):
         
         sns.heatmap(monthly_pivot, ax=ax6, cmap='RdYlGn', center=0, annot=True, 
                    fmt='.2f', linewidths=0.5, linecolor='white',
-                   cbar_kws={'label': 'Avg Return (%)', 'facecolor': '#16213e'},
+                   cbar_kws={'label': 'Avg Return (%)'},
                    annot_kws={'color': 'white', 'fontsize': 9})
         
         ax6.set_title('Monthly Returns: After MU Win vs Loss/Draw', 
