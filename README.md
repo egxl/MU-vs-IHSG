@@ -20,7 +20,15 @@ Based on the latest analysis of **910 MU Wins** over 26 years:
 
 The results show a slight negative bias in IHSG returns following an MU win, though the frequency of "red days" is close to a coin flip.
 
+### Overall Performance
+
 ![Analysis Dashboard](mu_ihsg_analysis_2000_2026.png)
+
+### Season-by-Season Breakdown
+
+To better understand these findings over time, the performance is also broken down by football season (August - May), revealing periods where the hypothesis held a much stronger edge.
+
+![Seasonal Analysis Graphs](mu_ihsg_seasonal_analysis.png)
 
 ---
 
@@ -36,6 +44,7 @@ The results show a slight negative bias in IHSG returns following an MU win, tho
     - Cumulative strategy vs. Buy & Hold benchmark
     - Rolling 10-day correlation
     - Monthly performance heatmap
+- **Season-by-Season Analysis**: Detailed breakdown of accuracy and average returns for each football season.
 
 ---
 
