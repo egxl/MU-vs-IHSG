@@ -12,12 +12,13 @@ from datetime import datetime, timedelta
 # ==========================================
 # 1. CONSTANTS & CONFIGURATION
 # ==========================================
+# DATA SOURCES
+MU_HARDCODED_FILE = "mu_history_2000_2026.csv"
 MU_CACHE_FILE = "mu_history_cache.csv"
 IHSG_CACHE_FILE = "ihsg_history_cache.csv"
 MU_FBREF_ID = "19538871" # Manchester United ID on FBref
-FOOTBALL_API_KEY = "1b5347948e7b4eb5a916e3c422555905" # From previous script
+FOOTBALL_API_KEY = "1b5347948e7b4eb5a916e3c422555905" 
 
-# DATA SOURCE CONFIGURATION
 # Set to True to enable "Synthetic generator / Mock Tertiary fallback" if real data retrieval fails
 ENABLE_MOCK_FALLBACK = False
 
@@ -146,12 +147,19 @@ def run_analysis(use_cache=True):
     
     # 1. Get Football Data
     mu_data = pd.DataFrame()
-    if use_cache and os.path.exists(MU_CACHE_FILE):
+    
+    # Priority 1: Hardcoded Match History (2000-2026)
+    if os.path.exists(MU_HARDCODED_FILE):
+        print(f"[DATA] Loading hardcoded MU history from {MU_HARDCODED_FILE}")
+        mu_data = pd.read_csv(MU_HARDCODED_FILE, parse_dates=['Date'])
+    
+    # Priority 2: Cache from Scraper/API
+    if mu_data.empty and use_cache and os.path.exists(MU_CACHE_FILE):
         print(f"[CACHE] Loading MU history from {MU_CACHE_FILE}")
         mu_data = pd.read_csv(MU_CACHE_FILE, parse_dates=['Date'])
     
     if mu_data.empty:
-        # Try Scraper
+        # Priority 3: Scraper
         mu_data = fetch_mu_history_fbref(years=5)
         
         # Try API if Scraper failed
@@ -174,7 +182,7 @@ def run_analysis(use_cache=True):
             print(f"[SUCCESS] MU history cached to {MU_CACHE_FILE}")
 
     # 2. Get Stock Data
-    ihsg_data = fetch_ihsg_data(years=6, use_cache=use_cache)
+    ihsg_data = fetch_ihsg_data(years=27, use_cache=use_cache)
     
     # 3. Align & Merge
     print("Aligning match dates to next available trading session...")
@@ -239,13 +247,13 @@ def run_analysis(use_cache=True):
         'neutral': '#95A5A6',       # Gray
     }
     
-    # Create sophisticated 2x2 dashboard
-    fig = plt.figure(figsize=(18, 14))
+    # Create sophisticated dashboard
+    fig = plt.figure(figsize=(20, 16))
     fig.patch.set_facecolor('#1a1a2e')
     
     # Use GridSpec for advanced layout
-    gs = fig.add_gridspec(3, 3, hspace=0.35, wspace=0.3, 
-                         left=0.06, right=0.94, top=0.92, bottom=0.05)
+    gs = fig.add_gridspec(3, 3, hspace=0.45, wspace=0.35, 
+                         left=0.08, right=0.92, top=0.90, bottom=0.08)
     
     # Color helper for text
     def color_text(color='#ECF0F1'):
@@ -433,13 +441,16 @@ def run_analysis(use_cache=True):
     # MAIN TITLE
     # ------------------------------------------
     fig.suptitle('Manchester United vs. Indonesian Stock Exchange (IHSG) Analysis Dashboard', 
-                 fontsize=20, fontweight='bold', color='white', y=0.98)
+                 fontsize=24, fontweight='bold', color='white', y=0.97)
     
     # Add subtitle with key stats
-    fig.text(0.5, 0.95, f'Hypothesis Accuracy: {accuracy:.1f}% | Total Matches: {total_wins} | Data Period: {final_df["Date"].min().strftime("%Y")} - {final_df["Date"].max().strftime("%Y")}', 
-             ha='center', va='top', fontsize=11, color='#BDC3C7', style='italic')
+    fig.text(0.5, 0.93, f'Hypothesis Accuracy: {accuracy:.1f}% | Total Matches: {total_wins} | Data Period: {final_df["Date"].min().strftime("%Y")} - {final_df["Date"].max().strftime("%Y")}', 
+             ha='center', va='top', fontsize=13, color='#BDC3C7', style='italic')
     
-    plt.show()
+    output_plot = "mu_ihsg_analysis_2000_2026.png"
+    plt.savefig(output_plot, dpi=120, bbox_inches='tight', facecolor=fig.get_facecolor())
+    print(f"\n[SUCCESS] Analysis dashboard saved to {output_plot}")
+    plt.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MU vs IHSG Correlation Analysis")

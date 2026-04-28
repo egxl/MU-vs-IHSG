@@ -10,11 +10,25 @@ This project fetches real match results and stock data, aligns them to the next 
 
 ---
 
+## 📊 Current Findings (2000 - 2026)
+
+Based on the latest analysis of **910 MU Wins** over 26 years:
+
+- **Hypothesis Accuracy**: **48.35%**
+- **Avg Return After Win**: **-0.0866%**
+- **Avg Return After Loss/Draw**: **-0.0176%**
+
+The results show a slight negative bias in IHSG returns following an MU win, though the frequency of "red days" is close to a coin flip.
+
+![Analysis Dashboard](mu_ihsg_analysis_2000_2026.png)
+
+---
+
 ## Features
 
-- **Multi-source football data**: FBref scraping → Football-Data.org API → optional synthetic mock fallback
-- **Local CSV caching**: avoids redundant network requests on re-runs
-- **Statistical summary**: win count, red-day frequency, average returns
+- **Hardcoded Historical Data**: Includes a comprehensive dataset of MU matches from **2000 to 2026** (1,528 matches).
+- **Multi-source football fallback**: Live scraping from FBref and Football-Data.org API for recent data.
+- **Local CSV caching**: Optimizes performance by storing stock data locally.
 - **Sophisticated Analytics Dashboard**: A premium 6-panel visualization including:
     - Average returns comparison
     - Return distribution density (KDE)
@@ -22,7 +36,6 @@ This project fetches real match results and stock data, aligns them to the next 
     - Cumulative strategy vs. Buy & Hold benchmark
     - Rolling 10-day correlation
     - Monthly performance heatmap
-- **Smart Data Alignment**: Automatically clips charts to the MU match date range for accurate strategy visualization.
 
 ---
 
@@ -35,7 +48,7 @@ git clone https://github.com/your-username/muihsghypothesis.git
 cd muihsghypothesis
 ```
 
-### 2. Create a virtual environment (recommended)
+### 2. Create a virtual environment
 
 ```bash
 python -m venv venv
@@ -51,33 +64,17 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. API Key Configuration
-
-Open `muihsg.py` and replace the `FOOTBALL_API_KEY` constant with your own key from [football-data.org](https://www.football-data.org/). 
-
-### 5. Configure Data Sources (Optional)
-
-By default, the script will only use real data from FBref or the API. If both fail, it will stop. To enable the synthetic mock data generator for testing purposes:
-1. Open `muihsg.py`.
-2. Set `ENABLE_MOCK_FALLBACK = True`.
-
 ---
 
 ## Usage
 
 ```bash
-# Run with default settings (uses local cache if available)
+# Run the full analysis (uses the hardcoded 2000-2026 dataset)
 python muihsg.py
 
-# Force refresh data (ignores cache and fetches fresh data)
+# Force refresh stock data (ignores cache and fetches fresh data from Yahoo Finance)
 python muihsg.py --refresh
 ```
-
-The script will:
-1. Load cached data (unless `--refresh` is used)
-2. Align match dates to the next trading session
-3. Print a detailed statistical summary to the console
-4. Display a sophisticated 6-panel analytics dashboard
 
 ---
 
@@ -85,9 +82,9 @@ The script will:
 
 | Source | Type | Notes |
 |---|---|---|
-| [FBref](https://fbref.com) | Scraping | Primary — full match logs |
+| [11v11.com](https://www.11v11.com) | Static | **Primary** — Hardcoded history (2000-2026) |
+| [FBref](https://fbref.com) | Scraping | Fallback for recent live matches |
 | [football-data.org](https://www.football-data.org/) | API | Secondary fallback |
-| Synthetic generator | Mock | Tertiary fallback (Disabled by default) |
 | [Yahoo Finance (^JKSE)](https://finance.yahoo.com/quote/%5EJKSE/) | API via `yfinance` | IHSG daily data |
 
 ---
@@ -95,14 +92,15 @@ The script will:
 ## Project Structure
 
 ```
-muihsghypothesis/
-├── muihsg.py           # Main analysis script
-├── requirements.txt    # Python dependencies
-├── README.md           # This file
-└── .gitignore          # Excludes cache CSVs and build artifacts
+muihsg-vs-ihsg/
+├── muihsg.py                   # Main analysis engine
+├── scraper_11v11.py            # Tool used to parse 11v11 match records
+├── mu_history_2000_2026.csv    # Hardcoded MU match dataset
+├── 11v11_match_records/        # Source HTML/Text records from 11v11
+├── requirements.txt            # Python dependencies
+├── README.md                   # This file
+└── .gitignore                  # Excludes local caches
 ```
-
-> **Note:** CSV cache files (`*_cache.csv`) are excluded from version control via `.gitignore`. They are generated locally on first run.
 
 ---
 
