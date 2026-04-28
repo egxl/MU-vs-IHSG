@@ -1,0 +1,42 @@
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ===========================
+# Data Cache (local only)
+# ===========================
+*_cache.csv
+*.csv
+
+# ===========================
+# Jupyter / IDE
+# ===========================
+.ipynb_checkpoints/
+.vscode/
+.idea/
+*.DS_Store
+
+# ===========================
+# API Keys / Secrets
+# ===========================
+.env
+secrets.py
+config.local.py
+
+# ===========================
+# Logs & Output
+# ===========================
+*.log
