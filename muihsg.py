@@ -203,6 +203,13 @@ def run_analysis(use_cache=True):
     ihsg_data.loc[ihsg_data.index.isin(win_next_days), 'Strategy_Return'] = -ihsg_data.loc[ihsg_data.index.isin(win_next_days), 'Daily_Return']
     ihsg_data['Cumulative_Return'] = (1 + ihsg_data['Strategy_Return']).cumprod() - 1
     
+    # Filter data to MU match date range for visualizations
+    mu_date_min = final_df['Date'].min()
+    mu_date_max = final_df['Date'].max()
+    
+    # Create filtered IHSG data for strategy visualization (only show periods with MU matches)
+    ihsg_filtered = ihsg_data[(ihsg_data.index >= mu_date_min) & (ihsg_data.index <= mu_date_max)].copy()
+    
     print("\n" + "="*40)
     print("STATISTICAL SUMMARY")
     print("="*40)
@@ -338,16 +345,16 @@ def run_analysis(use_cache=True):
     ax4 = fig.add_subplot(gs[1, :2])
     ax4.set_facecolor('#16213e')
     
-    # Plot cumulative returns with gradient fill
-    ax4.plot(ihsg_data.index, ihsg_data['Cumulative_Return'] * 100, 
+    # Plot cumulative returns with gradient fill (filtered to MU date range)
+    ax4.plot(ihsg_filtered.index, ihsg_filtered['Cumulative_Return'] * 100, 
              color=COLORS['secondary'], linewidth=2.5, label='Strategy Return', alpha=0.9)
-    ax4.fill_between(ihsg_data.index, ihsg_data['Cumulative_Return'] * 100, 
+    ax4.fill_between(ihsg_filtered.index, ihsg_filtered['Cumulative_Return'] * 100, 
                      color=COLORS['secondary'], alpha=0.15)
     
     # Add benchmark (buy & hold)
-    ihsg_data['BuyHold_Return'] = ihsg_data['Daily_Return']
-    ihsg_data['Cumulative_BH'] = (1 + ihsg_data['BuyHold_Return']).cumprod() - 1
-    ax4.plot(ihsg_data.index, ihsg_data['Cumulative_BH'] * 100, 
+    ihsg_filtered['BuyHold_Return'] = ihsg_filtered['Daily_Return']
+    ihsg_filtered['Cumulative_BH'] = (1 + ihsg_filtered['BuyHold_Return']).cumprod() - 1
+    ax4.plot(ihsg_filtered.index, ihsg_filtered['Cumulative_BH'] * 100, 
              color=COLORS['neutral'], linewidth=1.5, linestyle='--', 
              label='IHSG Buy & Hold', alpha=0.7)
     
