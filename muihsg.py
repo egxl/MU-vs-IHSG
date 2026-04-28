@@ -140,6 +140,12 @@ def fetch_ihsg_data(years=6, use_cache=True):
 # ==========================================
 # 4. ALIGNMENT & BACKTEST ENGINE
 # ==========================================
+def get_season(date):
+    if date.month >= 8:
+        return f"{date.year}-{date.year+1}"
+    else:
+        return f"{date.year-1}-{date.year}"
+
 def run_analysis(use_cache=True):
     print("="*60)
     print("MU vs IHSG CORRELATION ENGINE")
@@ -450,6 +456,88 @@ def run_analysis(use_cache=True):
     output_plot = "mu_ihsg_analysis_2000_2026.png"
     plt.savefig(output_plot, dpi=120, bbox_inches='tight', facecolor=fig.get_facecolor())
     print(f"\n[SUCCESS] Analysis dashboard saved to {output_plot}")
+    plt.close()
+
+    # ------------------------------------------
+    # SEASONAL ANALYSIS DASHBOARD
+    # ------------------------------------------
+    print("\nGenerating season-by-season analysis graphs...")
+    final_df['Season'] = final_df['Date'].apply(get_season)
+    
+    season_stats = []
+    for season, group in final_df.groupby('Season'):
+        wins_only_season = group[group['MU_Won'] == True]
+        total_wins_season = len(wins_only_season)
+        if total_wins_season == 0:
+            continue
+            
+        success_cases_season = wins_only_season['Goes_Red'].sum()
+        accuracy_season = (success_cases_season / total_wins_season) * 100
+        avg_ret_win_season = wins_only_season['Daily_Return'].mean() * 100
+        
+        season_stats.append({
+            'Season': season,
+            'Total_Wins': total_wins_season,
+            'Accuracy': accuracy_season,
+            'Avg_Return': avg_ret_win_season
+        })
+        
+    stats_df = pd.DataFrame(season_stats).sort_values('Season')
+    
+    fig2 = plt.figure(figsize=(20, 12))
+    fig2.patch.set_facecolor('#1a1a2e')
+    gs2 = fig2.add_gridspec(2, 1, hspace=0.4, left=0.08, right=0.92, top=0.90, bottom=0.08)
+    
+    # Panel 1: Accuracy per season
+    ax_s1 = fig2.add_subplot(gs2[0, 0])
+    ax_s1.set_facecolor('#16213e')
+    bars_s1 = ax_s1.bar(stats_df['Season'], stats_df['Accuracy'], color=COLORS['secondary'], alpha=0.85)
+    ax_s1.axhline(50, color='white', linestyle='--', alpha=0.5)
+    ax_s1.set_title('Hypothesis Accuracy by Season (%) - (IHSG Drops After MU Win)', fontsize=14, fontweight='bold', color='white', pad=15)
+    ax_s1.set_ylabel('Accuracy (%)', color='white', fontsize=10)
+    ax_s1.tick_params(colors='white', axis='x', labelrotation=45)
+    ax_s1.tick_params(colors='white', axis='y')
+    for spine in ax_s1.spines.values():
+        spine.set_color('white')
+        spine.set_alpha(0.3)
+        
+    for bar, wins in zip(bars_s1, stats_df['Total_Wins']):
+        height = bar.get_height()
+        ax_s1.annotate(f'{height:.1f}%\n(n={wins})',
+                    xy=(bar.get_x() + bar.get_width() / 2, height),
+                    xytext=(0, 3), textcoords="offset points",
+                    ha='center', va='bottom', color='white', fontsize=9)
+                    
+    # Panel 2: Average Return per season
+    ax_s2 = fig2.add_subplot(gs2[1, 0])
+    ax_s2.set_facecolor('#16213e')
+    
+    # Highlight negative returns (IHSG drops) as green (success for hypothesis) and positive as red (failure)
+    bar_colors = [COLORS['win'] if val < 0 else COLORS['loss'] for val in stats_df['Avg_Return']]
+    bars_s2 = ax_s2.bar(stats_df['Season'], stats_df['Avg_Return'], color=bar_colors, alpha=0.85)
+    ax_s2.axhline(0, color='white', linestyle='-', alpha=0.5)
+    ax_s2.set_title('Average IHSG Daily Return After MU Win by Season (%)', fontsize=14, fontweight='bold', color='white', pad=15)
+    ax_s2.set_ylabel('Return (%)', color='white', fontsize=10)
+    ax_s2.tick_params(colors='white', axis='x', labelrotation=45)
+    ax_s2.tick_params(colors='white', axis='y')
+    for spine in ax_s2.spines.values():
+        spine.set_color('white')
+        spine.set_alpha(0.3)
+        
+    for bar, val in zip(bars_s2, stats_df['Avg_Return']):
+        height = bar.get_height()
+        y_pos = height if height > 0 else height - 0.05
+        va = 'bottom' if height > 0 else 'top'
+        ax_s2.annotate(f'{val:.2f}%',
+                    xy=(bar.get_x() + bar.get_width() / 2, y_pos),
+                    xytext=(0, 3 if height > 0 else -3), textcoords="offset points",
+                    ha='center', va=va, color='white', fontsize=10)
+                    
+    fig2.suptitle('Season-by-Season Analysis: MU Wins vs IHSG Returns', fontsize=20, fontweight='bold', color='white', y=0.96)
+    
+    output_seasonal_plot = "mu_ihsg_seasonal_analysis.png"
+    plt.savefig(output_seasonal_plot, dpi=120, bbox_inches='tight', facecolor=fig2.get_facecolor())
+    print(f"[SUCCESS] Seasonal analysis graphs saved to {output_seasonal_plot}")
     plt.close()
 
 if __name__ == "__main__":
